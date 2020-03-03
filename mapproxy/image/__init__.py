@@ -18,9 +18,9 @@ Image and tile manipulation (transforming, merging, etc).
 """
 import io
 from io import BytesIO
+import gzip
 
-
-from mapproxy.compat.image import Image, ImageChops, ImageFileDirectory_v2, TiffTags
+from mapproxy.compat.image import Image, ImageChops #, ImageFileDirectory_v2, TiffTags
 from mapproxy.image.opts import create_image, ImageFormat
 from mapproxy.config import base_config
 from mapproxy.srs import make_lin_transf, get_epsg_num
@@ -72,6 +72,8 @@ class GeoReference(object):
         )
 
     def tiff_tags(self, img_size):
+        raise NotImplementedError()
+        '''
         tags = ImageFileDirectory_v2()
         tags[TIFF_MODELPIXELSCALETAG] = self.pixelscale(img_size)
         tags.tagtype[TIFF_MODELPIXELSCALETAG] = TiffTags.DOUBLE
@@ -87,6 +89,7 @@ class GeoReference(object):
         )
         tags.tagtype[TIFF_GEOKEYDIRECTORYTAG] = TiffTags.SHORT
         return tags
+        '''
 
 
 class ImageSource(object):
@@ -166,7 +169,11 @@ class ImageSource(object):
                 self._buf.seek(0)
             except (io.UnsupportedOperation, AttributeError):
                 # PIL needs file objects with seek
-                self._buf = BytesIO(self._buf.read())
+                if self._buf.info().get('Content-Encoding') == 'gzip':
+                    buf = BytesIO(self._buf.read())
+                    self._buf = gzip.GzipFile(fileobj = buf)
+                else:
+                    self._buf = BytesIO(self._buf.read())
 
     def _make_readable_buf(self):
         if not self._buf and self._fname:

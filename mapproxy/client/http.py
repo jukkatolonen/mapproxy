@@ -221,8 +221,9 @@ class HTTPClient(object):
     def open_image(self, url, data=None):
         resp = self.open(url, data=data)
         if 'content-type' in resp.headers:
-            if not resp.headers['content-type'].lower().startswith('image'):
-                raise HTTPClientError('response is not an image: (%s)' % (resp.read()))
+            respType = resp.headers['content-type'].lower()
+            if not respType.startswith('application') and not respType.startswith('image'):
+                raise HTTPClientError('Bad response: (%s)' % (resp.read()))
         return ImageSource(resp)
 
     def handle_url_exception(self, url, message, reason, response_code=None):
@@ -279,7 +280,8 @@ def retrieve_image(url, client=None):
     :raise HTTPClientError: if response content-type doesn't start with image
     """
     resp = open_url(url)
-    if not resp.headers['content-type'].startswith('image'):
-        raise HTTPClientError('response is not an image: (%s)' % (resp.read()))
+    respType = resp.headers['content-type'].lower()
+    if not respType.startswith('application') and not respType.startswith('image'):
+        raise HTTPClientError('Bad response: (%s)' % (resp.read()))
     return ImageSource(resp)
 
