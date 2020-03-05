@@ -186,7 +186,11 @@ class ImageSource(object):
                 self._buf.seek(0)
             except (io.UnsupportedOperation, AttributeError):
                 # PIL needs file objects with seek
-                self._buf = BytesIO(self._buf.read())
+                if self._buf.info().get('Content-Encoding') == 'gzip':
+                    buf = BytesIO(self._buf.read())
+                    self._buf = gzip.GzipFile(fileobj = buf)
+                else:
+                    self._buf = BytesIO(self._buf.read())
 
 
     def as_buffer(self, image_opts=None, format=None, seekable=False):
